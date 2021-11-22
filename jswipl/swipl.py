@@ -41,6 +41,7 @@ def run(code):
     ok = True
 
     tmp = ""
+    clauses = []
     isQuery = False
     for line in code.split("\n"):
         line = line.strip()
@@ -79,12 +80,19 @@ def run(code):
                     output.append(format_result(result))
                     result.close()
                 else:
-                    prolog.assertz('(' + tmp + ')')
+                    # prolog.assertz('(' + tmp + ')')
+                    clauses += tmp
             except PrologError as error:
                 ok = False
                 output.append("ERROR: {}".format(error))
 
             tmp = ""
             isQuery = False
-
+    try:
+        f = open("jupyter-cell-consult.pl", 'w')
+        f.writelines(clauses)
+    finally:
+        f.close()
+        prolog.consult("jupyter-cell-consult.pl")
+        output.append("Cell consulted")
     return output, ok
