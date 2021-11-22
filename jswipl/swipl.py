@@ -39,7 +39,6 @@ def run(code):
 
     output = []
     ok = True
-
     tmp = ""
     clauses = []
     isQuery = False
@@ -51,16 +50,17 @@ def run(code):
         if line[:2] == "?-":
             isQuery = True
             line = line[2:]
+            tmp += " " + line
+        else:
+            clauses.append(line)
 
-        tmp += " " + line
-
-        if tmp[-1] == ".":
+        if isQuery and tmp[-1] == ".":
             # End of statement
             tmp = tmp[:-1] # Removes "."
             maxresults = DEFAULT_LIMIT
             # Checks for maxresults
             if tmp[-1] == "}":
-                tmp = tmp[:-1] # Removes "."
+                tmp = tmp[:-1] # Removes "}"
                 limitStart = tmp.rfind('{')
                 if limitStart == -1:
                     ok = False
@@ -79,20 +79,17 @@ def run(code):
                     result = prolog.query(tmp, maxresult=maxresults)
                     output.append(format_result(result))
                     result.close()
-                else:
-                    # prolog.assertz('(' + tmp + ')')
-                    clauses += tmp
+
             except PrologError as error:
                 ok = False
                 output.append("ERROR: {}".format(error))
-
             tmp = ""
             isQuery = False
-    try:
-        f = open("jupyter-cell-consult.pl", 'w')
-        f.writelines(clauses)
-    finally:
-        f.close()
-        prolog.consult("jupyter-cell-consult.pl")
-        output.append("Cell consulted")
+    if len(clauses) > 0:
+        try:
+            f = open("jupyter-cell-consult.pl", 'w+')
+            f.write('\n'.join(clauses))
+        finally:
+            f.close()
+            prolog.consult("jupyter-cell-consult.pl")
     return output, ok
