@@ -1,6 +1,8 @@
 from pyswip import Prolog
 from pyswip import Functor
 from pyswip.prolog import PrologError
+from pathlib import Path
+import re
 
 DEFAULT_LIMIT = 10
 
@@ -42,11 +44,18 @@ def run(code):
     tmp = ""
     clauses = []
     isQuery = False
+    cell_files_dir = Path(Path.cwd(), "consulted_cells")
+    cell_files_dir.mkdir(mode=755, exist_ok=True)
+    cell_file_name = "cell.pl"
     for line in code.split("\n"):
         line = line.strip()
+        match = re.fullmatch(r"%\s*[Ff]ile:\s*(\w+.*)", line)
+        if match is not None:
+            cell_file_name = match.group(1)
+            if not cell_file_name.endswith(".pl"):
+                cell_file_name += ".pl"
         if line == "" or line[0] == "%":
             continue
-
         if line[:2] == "?-":
             isQuery = True
             line = line[2:]
@@ -87,9 +96,10 @@ def run(code):
             isQuery = False
     if len(clauses) > 0:
         try:
-            f = open("jupyter-cell-consult.pl", 'w+')
+            #f = open("foo.pl", 'w+')
+            f = open(Path(cell_files_dir, cell_file_name), 'w+')
             f.write('\n'.join(clauses))
         finally:
             f.close()
-            prolog.consult("jupyter-cell-consult.pl")
+            prolog.consult(f.name)
     return output, ok
